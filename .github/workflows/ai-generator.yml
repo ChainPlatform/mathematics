@@ -67,74 +67,103 @@ jobs:
       - name: Build payload
         id: slack
         run: |
-          payload=$(jq -r '
+          payload=$(jq -c '
 
           def highlight:
             if . == "000000" then ""
             elif test("00$") then "🔥\(.)🔥"
-            elif test("(\\d)\\1\\1") then "💸\(. )💸"
+            elif test("(\\d)\\1\\1") then "💸\(.)💸"
             else . end;
 
-          def fmtProvince:
-            if . == null then ""
+          # =========================
+          # 🌴 BUILD PROVINCE BLOCK
+          def provinceBlocks(title; data):
+            if data == null then []
             else
-              to_entries
-              | map(
-                  "*\(.key)*\n\(.value | map(highlight) | join("  •  "))"
-                )
-              | join("\n\n")
+              data
+              | to_entries
+              | map({
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text:
+                      "*" + .key + "*\n" +
+                      (.value | map(highlight) | join("  •  "))
+                  }
+                })
             end;
 
-          {
-            text: "AI Prediction",
-            blocks: [
-
-              {
-                type: "header",
-                text: {
-                  type: "plain_text",
-                  text: "🎯 AI Prediction \(.date // "N/A")"
-                }
-              },
-
-              {
-                type: "section",
-                text: {
-                  type: "mrkdwn",
-                  text:
-                    "*🇻🇳 Miền Bắc*\n\((.xsmb // []) | map(select(. != "000000") | highlight) | join("  •  "))"
-                }
-              },
-
-              {
-                type: "section",
-                text: {
-                  type: "mrkdwn",
-                  text:
-                    "*🌴 Miền Nam*\n\n\((.xsmn // {}) | fmtProvince)"
-                }
-              },
-
-              {
-                type: "section",
-                text: {
-                  type: "mrkdwn",
-                  text:
-                    "*🏔️ Miền Trung*\n\n\((.xsmt // {}) | fmtProvince)"
-                }
-              },
-
-              {
-                type: "section",
-                text: {
-                  type: "mrkdwn",
-                  text:
-                    "*🎰 Vietlott*\n\nPower 6/55\n\((.power655 // []) | map("• " + .) | join("\n"))\n\nMega 6/45\n\((.mega645 // []) | map("• " + .) | join("\n"))"
-                }
+          [
+            # =========================
+            # HEADER
+            {
+              type: "header",
+              text: {
+                type: "plain_text",
+                text: "🎯 AI Prediction " + (.date // "N/A")
               }
+            },
 
-            ]
-          }
+            # =========================
+            # MIỀN BẮC
+            {
+              type: "section",
+              text: {
+                type: "mrkdwn",
+                text:
+                  "*🇻🇳 Miền Bắc*\n" +
+                  ((.xsmb // [])
+                    | map(select(. != "000000") | highlight)
+                    | join("  •  "))
+              }
+            }
+
+          ]
+
+          # =========================
+          # 🌴 MIỀN NAM
+          + [{
+              type: "divider"
+            },
+            {
+              type: "section",
+              text: { type: "mrkdwn", text: "*🌴 Miền Nam*" }
+            }
+          ]
+          + provinceBlocks("xsmn"; .xsmn)
+
+          # =========================
+          # 🏔️ MIỀN TRUNG
+          + [{
+              type: "divider"
+            },
+            {
+              type: "section",
+              text: { type: "mrkdwn", text: "*🏔️ Miền Trung*" }
+            }
+          ]
+          + provinceBlocks("xsmt"; .xsmt)
+
+          # =========================
+          # 🎰 VIETLOTT
+          + [{
+              type: "divider"
+            },
+            {
+              type: "section",
+              text: {
+                type: "mrkdwn",
+                text:
+                  "*🎰 Vietlott*\n\n" +
+                  "*Power 6/55*\n" +
+                  ((.power655 // []) | map("• " + .) | join("\n")) +
+                  "\n\n*Mega 6/45*\n" +
+                  ((.mega645 // []) | map("• " + .) | join("\n"))
+              }
+            }
+          ]
+
+          | { text: "AI Prediction", blocks: . }
 
           ' ai_output.json)
 
