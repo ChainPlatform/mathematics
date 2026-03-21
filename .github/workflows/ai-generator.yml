@@ -65,7 +65,7 @@ jobs:
           payload=$(cat ai_output.json | jq -r '
           def fmtProvince:
             to_entries
-            | map("*" + .key + "*: `" + (.value | join(" / ")) + "`")
+            | map("*\(.key)*: `\(.value | join(" / "))`")
             | join("\n");
 
           {
@@ -75,7 +75,7 @@ jobs:
                 type: "header",
                 text: {
                   type: "plain_text",
-                  text: "🎯 AI Prediction " + .date
+                  text: "🎯 AI Prediction \(.date)"
                 }
               },
 
@@ -83,7 +83,7 @@ jobs:
                 type: "section",
                 text: {
                   type: "mrkdwn",
-                  text: "*🇻🇳 Miền Bắc:*\n`" + ((.xsmb // []) | map(select(. != "000000")) | join(" | ")) + "`"
+                  text: "*🇻🇳 Miền Bắc:*\n`\((.xsmb // []) | map(select(. != "000000")) | join(" | "))`"
                 }
               },
 
@@ -91,7 +91,7 @@ jobs:
                 type: "section",
                 text: {
                   type: "mrkdwn",
-                  text: "*🌴 Miền Nam:*\n" + (.xsmn | fmtProvince)
+                  text: "*🌴 Miền Nam:*\n\(.xsmn | fmtProvince)"
                 }
               },
 
@@ -99,7 +99,7 @@ jobs:
                 type: "section",
                 text: {
                   type: "mrkdwn",
-                  text: "*🏔️ Miền Trung:*\n" + (.xsmt | fmtProvince)
+                  text: "*🏔️ Miền Trung:*\n\(.xsmt | fmtProvince)"
                 }
               },
 
@@ -108,8 +108,7 @@ jobs:
                 text: {
                   type: "mrkdwn",
                   text:
-                    "*🎰 Power 6/55:*\n`" + (.power655 | join(" | ")) + "`\n\n" +
-                    "*🎰 Mega 6/45:*\n`" + (.mega645 | join(" | ")) + "`"
+                    "*🎰 Power 6/55:*\n`\(.power655 | join(" | "))`\n\n*🎰 Mega 6/45:*\n`\(.mega645 | join(" | "))`"
                 }
               }
             ]
