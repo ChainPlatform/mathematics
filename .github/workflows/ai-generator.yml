@@ -1,0 +1,128 @@
+name: Daily AI Prediction
+
+on:
+  schedule:
+    - cron: '5 12 * * *'
+  workflow_dispatch:
+
+jobs:
+  ai:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: npm install fs-extra
+
+      # =======================
+      # 🔁 RETRY AI (tối đa 5 lần)
+      # =======================
+      - name: Run AI Generator with retry
+        run: |
+          for i in 1 2 3 4 5
+          do
+            echo "🧠 Attempt $i..."
+
+            node calculator.js > ai_output.txt 2>&1
+
+            # ✅ check DONE log
+            if grep -q "DONE AI PREDICTION" ai_output.txt; then
+              
+              # ✅ check JSON tồn tại
+              if [ -f ai_output.json ]; then
+
+                # ✅ check JSON hợp lệ
+                if jq empty ai_output.json >/dev/null 2>&1; then
+                  echo "✅ AI success"
+                  break
+                fi
+
+              fi
+            fi
+
+            if [ $i -eq 5 ]; then
+              echo "❌ AI failed after 5 attempts"
+              exit 1
+            fi
+
+            echo "⏳ Retry after 5 minutes..."
+            sleep 300
+          done
+
+      # =======================
+      # 📦 FORMAT SLACK MESSAGE
+      # =======================
+      - name: Build Slack payload
+        id: slack
+        run: |
+          payload=$(cat ai_output.json | jq -r '
+          def fmtProvince:
+            to_entries
+            | map("*" + .key + "*: `" + (.value | join(" / ")) + "`")
+            | join("\n");
+
+          {
+            text: "🎯 AI Prediction",
+            blocks: [
+              {
+                type: "header",
+                text: {
+                  type: "plain_text",
+                  text: "🎯 AI Prediction " + .date
+                }
+              },
+
+              {
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text: "*🇻🇳 Miền Bắc:*\n`" + ((.xsmb // []) | map(select(. != "000000")) | join(" | ")) + "`"
+                }
+              },
+
+              {
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text: "*🌴 Miền Nam:*\n" + (.xsmn | fmtProvince)
+                }
+              },
+
+              {
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text: "*🏔️ Miền Trung:*\n" + (.xsmt | fmtProvince)
+                }
+              },
+
+              {
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text:
+                    "*🎰 Power 6/55:*\n`" + (.power655 | join(" | ")) + "`\n\n" +
+                    "*🎰 Mega 6/45:*\n`" + (.mega645 | join(" | ")) + "`"
+                }
+              }
+            ]
+          }
+          ')
+
+          echo "payload=$payload" >> $GITHUB_OUTPUT
+
+      # =======================
+      # 📤 SEND TO SLACK
+      # =======================
+      - name: Send to Slack
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '${{ steps.slack.outputs.payload }}' \
+          ${{ secrets.SLACK_WEBHOOK }}

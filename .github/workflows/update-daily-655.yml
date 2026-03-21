@@ -1,0 +1,54 @@
+name: Daily Power6x55 Scrape
+
+on:
+  schedule:
+    - cron: '53 11 * * 3,5,7'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - run: npm install axios cheerio
+
+      - name: Scrape Power 6x55
+        run: |
+          node -e "
+            const fs = require('fs'), path = require('path');
+            const { scrapeToday } = require('./scripts/scrape655Today');
+
+            scrapeToday()
+              .then(o => {
+                const file = './results/power6x55.json';
+                const prev = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file)) : [];
+
+                if (!prev.find(e => e.date === o.date)) {
+                  prev.unshift(o);
+                  fs.writeFileSync(file, JSON.stringify(prev,null,2));
+                  console.log('✅ Saved', o.date);
+                } else {
+                  console.log('ℹ️ Exists', o.date);
+                }
+              })
+              .catch(err => {
+                console.error('❗Error:', err);
+                process.exit(1);
+              });
+          "
+
+      - name: Commit & push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results/power6x55.json
+          git diff --quiet --cached || git commit -m "📈 Power6x55 @ $(date -u +'%Y-%m-%d')" 
+          git push

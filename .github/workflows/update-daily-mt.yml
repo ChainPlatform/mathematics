@@ -1,0 +1,56 @@
+name: Daily XSMT Scrape
+
+on:
+  schedule:
+    - cron: '55 11 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - run: npm install axios cheerio
+
+      - name: Scrape XSMT
+        run: |
+          node -e "
+            const fs = require('fs');
+            const { scrapeToday } = require('./scripts/scrapeMTToday');
+
+            scrapeToday()
+              .then(data => {
+                const file = './results/xsmt.json';
+                const prev = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file)) : [];
+
+                const map = new Map();
+
+                prev.forEach(i => map.set(i.date + '_' + i.province_id, i));
+                data.forEach(i => map.set(i.date + '_' + i.province_id, i));
+
+                const finalData = Array.from(map.values()).sort((a,b)=>{
+                  return new Date(b.date.split('-').reverse().join('-')) -
+                         new Date(a.date.split('-').reverse().join('-'));
+                });
+
+                fs.writeFileSync(file, JSON.stringify(finalData,null,2));
+                console.log('✅ Updated XSMT');
+              })
+              .catch(e => { console.error(e); process.exit(1); });
+          "
+
+      - name: Commit & push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results/xsmt.json
+          git diff --quiet --cached || git commit -m "📊 Update XSMT @ $(date -u +'%Y-%m-%d')" 
+          git push
