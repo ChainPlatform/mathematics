@@ -75,9 +75,7 @@ jobs:
             elif test("(\\d)\\1\\1") then "💸\(.)💸"
             else . end;
 
-          # =========================
-          # 🌴 BUILD PROVINCE BLOCK
-          def provinceBlocks(title; data):
+          def provinceBlocks(data):
             if data == null then []
             else
               data
@@ -87,83 +85,67 @@ jobs:
                   text: {
                     type: "mrkdwn",
                     text:
-                      "*" + .key + "*\n" +
-                      (.value | map(highlight) | join("  •  "))
+                      "*\(.key)*\n\(.value | map(highlight) | join("  •  "))"
                   }
                 })
             end;
 
-          [
-            # =========================
-            # HEADER
-            {
-              type: "header",
-              text: {
-                type: "plain_text",
-                text: "🎯 AI Prediction " + (.date // "N/A")
-              }
-            },
+          {
+            text: "AI Prediction",
+            blocks:
 
-            # =========================
-            # MIỀN BẮC
-            {
-              type: "section",
-              text: {
-                type: "mrkdwn",
-                text:
-                  "*🇻🇳 Miền Bắc*\n" +
-                  ((.xsmb // [])
-                    | map(select(. != "000000") | highlight)
-                    | join("  •  "))
-              }
-            }
+              (
+                [
+                  {
+                    type: "header",
+                    text: {
+                      type: "plain_text",
+                      text: "🎯 AI Prediction \(.date // "N/A")"
+                    }
+                  },
 
-          ]
+                  {
+                    type: "section",
+                    text: {
+                      type: "mrkdwn",
+                      text:
+                        "*🇻🇳 Miền Bắc*\n\((.xsmb // []) | map(select(. != "000000") | highlight) | join("  •  "))"
+                    }
+                  },
 
-          # =========================
-          # 🌴 MIỀN NAM
-          + [{
-              type: "divider"
-            },
-            {
-              type: "section",
-              text: { type: "mrkdwn", text: "*🌴 Miền Nam*" }
-            }
-          ]
-          + provinceBlocks("xsmn"; .xsmn)
+                  { type: "divider" },
 
-          # =========================
-          # 🏔️ MIỀN TRUNG
-          + [{
-              type: "divider"
-            },
-            {
-              type: "section",
-              text: { type: "mrkdwn", text: "*🏔️ Miền Trung*" }
-            }
-          ]
-          + provinceBlocks("xsmt"; .xsmt)
+                  {
+                    type: "section",
+                    text: { type: "mrkdwn", text: "*🌴 Miền Nam*" }
+                  }
+                ]
 
-          # =========================
-          # 🎰 VIETLOTT
-          + [{
-              type: "divider"
-            },
-            {
-              type: "section",
-              text: {
-                type: "mrkdwn",
-                text:
-                  "*🎰 Vietlott*\n\n" +
-                  "*Power 6/55*\n" +
-                  ((.power655 // []) | map("• " + .) | join("\n")) +
-                  "\n\n*Mega 6/45*\n" +
-                  ((.mega645 // []) | map("• " + .) | join("\n"))
-              }
-            }
-          ]
+                + provinceBlocks(.xsmn)
 
-          | { text: "AI Prediction", blocks: . }
+                + [
+                  { type: "divider" },
+                  {
+                    type: "section",
+                    text: { type: "mrkdwn", text: "*🏔️ Miền Trung*" }
+                  }
+                ]
+
+                + provinceBlocks(.xsmt)
+
+                + [
+                  { type: "divider" },
+                  {
+                    type: "section",
+                    text: {
+                      type: "mrkdwn",
+                      text:
+                        "*🎰 Vietlott*\n\nPower 6/55\n\((.power655 // []) | map("• " + .) | join("\n"))\n\nMega 6/45\n\((.mega645 // []) | map("• " + .) | join("\n"))"
+                    }
+                  }
+                ]
+              )
+          }
 
           ' ai_output.json)
 
