@@ -79,7 +79,7 @@ jobs:
                 type: "header",
                 text: {
                   type: "plain_text",
-                  text: "🎯 AI Prediction \(.date)"
+                  text: "🎯 AI Prediction \(.date // "N/A")"
                 }
               },
 
@@ -87,7 +87,8 @@ jobs:
                 type: "section",
                 text: {
                   type: "mrkdwn",
-                  text: "*🇻🇳 Miền Bắc*\n\((.xsmb // []) | map(select(. != "000000") | highlight) | join("  •  "))"
+                  text:
+                    "*🇻🇳 Miền Bắc*\n\((.xsmb // []) | map(select(. != "000000") | highlight) | join("  •  "))"
                 }
               },
 
@@ -95,7 +96,8 @@ jobs:
                 type: "section",
                 text: {
                   type: "mrkdwn",
-                  text: "*🌴 Miền Nam*\n\n\(.xsmn | fmtProvince)"
+                  text:
+                    "*🌴 Miền Nam*\n\n\((.xsmn // {}) | fmtProvince)"
                 }
               },
 
@@ -103,7 +105,8 @@ jobs:
                 type: "section",
                 text: {
                   type: "mrkdwn",
-                  text: "*🏔️ Miền Trung*\n\n\(.xsmt | fmtProvince)"
+                  text:
+                    "*🏔️ Miền Trung*\n\n\((.xsmt // {}) | fmtProvince)"
                 }
               },
 
@@ -111,7 +114,8 @@ jobs:
                 type: "section",
                 text: {
                   type: "mrkdwn",
-                  text: "*🎰 Vietlott*\n\nPower 6/55\n\(.power655 | map("• " + .) | join("\n"))\n\nMega 6/45\n\(.mega645 | map("• " + .) | join("\n"))"
+                  text:
+                    "*🎰 Vietlott*\n\nPower 6/55\n\((.power655 // []) | map("• " + .) | join("\n"))\n\nMega 6/45\n\((.mega645 // []) | map("• " + .) | join("\n"))"
                 }
               }
 
