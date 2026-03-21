@@ -62,9 +62,9 @@ jobs:
           cat ai_output.json || echo "❌ Missing file"
 
       # =======================
-      # 📦 BUILD SLACK PAYLOAD
+      # 📦 BUILD PAYLOAD
       # =======================
-      - name: Build Slack payload
+      - name: Build payload
         id: slack
         run: |
           payload=$(jq -r '
@@ -138,7 +138,9 @@ jobs:
 
           ' ai_output.json)
 
-          echo "payload=$payload" >> $GITHUB_OUTPUT
+          echo "payload<<EOF" >> $GITHUB_OUTPUT
+          echo "$payload" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       # =======================
       # 📤 SEND TO SLACK
