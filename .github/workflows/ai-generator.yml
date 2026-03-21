@@ -22,7 +22,7 @@ jobs:
         run: npm install fs-extra
 
       # =======================
-      # 🔁 RETRY AI (tối đa 5 lần)
+      # 🔁 RETRY AI
       # =======================
       - name: Run AI Generator with retry
         run: |
@@ -63,14 +63,36 @@ jobs:
         id: slack
         run: |
           payload=$(cat ai_output.json | jq -r '
+          
+          # =========================
+          # 🎯 EMOJI RANDOM
+          def randEmoji:
+            ["🎯","🔥","💸","🧠","📈"] | .[now|floor % length];
+
+          # =========================
+          # 🔥 HIGHLIGHT
+          def highlight:
+            if . == "000000" then ""
+            elif test("00$") then "🔥" + . + "🔥"
+            elif test("(\\d)\\1\\1") then "💸" + . + "💸"
+            else . end;
+
+          # =========================
+          # 🌴 FORMAT PROVINCE
           def fmtProvince:
             to_entries
-            | map("*\(.key)*: `\(.value | join(" / "))`")
-            | join("\n");
+            | map(
+                "*\(.key)*\n" +
+                (.value | map(highlight) | join("  •  "))
+              )
+            | join("\n\n");
 
           {
-            text: "🎯 AI Prediction",
+            text: "AI Prediction",
             blocks: [
+
+              # =========================
+              # HEADER
               {
                 type: "header",
                 text: {
@@ -79,38 +101,59 @@ jobs:
                 }
               },
 
-              {
-                type: "section",
-                text: {
-                  type: "mrkdwn",
-                  text: "*🇻🇳 Miền Bắc:*\n`\((.xsmb // []) | map(select(. != "000000")) | join(" | "))`"
-                }
-              },
-
-              {
-                type: "section",
-                text: {
-                  type: "mrkdwn",
-                  text: "*🌴 Miền Nam:*\n\(.xsmn | fmtProvince)"
-                }
-              },
-
-              {
-                type: "section",
-                text: {
-                  type: "mrkdwn",
-                  text: "*🏔️ Miền Trung:*\n\(.xsmt | fmtProvince)"
-                }
-              },
-
+              # =========================
+              # MIỀN BẮC
               {
                 type: "section",
                 text: {
                   type: "mrkdwn",
                   text:
-                    "*🎰 Power 6/55:*\n`\(.power655 | join(" | "))`\n\n*🎰 Mega 6/45:*\n`\(.mega645 | join(" | "))`"
+                    "*🇻🇳 Miền Bắc*\n" +
+                    ((.xsmb // [])
+                      | map(select(. != "000000") | highlight)
+                      | join("  •  "))
+                }
+              },
+
+              # =========================
+              # MIỀN NAM
+              {
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text:
+                    "*🌴 Miền Nam*\n\n" +
+                    (.xsmn | fmtProvince)
+                }
+              },
+
+              # =========================
+              # MIỀN TRUNG
+              {
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text:
+                    "*🏔️ Miền Trung*\n\n" +
+                    (.xsmt | fmtProvince)
+                }
+              },
+
+              # =========================
+              # VIETLOTT
+              {
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text:
+                    "*🎰 Vietlott*\n\n" +
+                    "*Power 6/55*\n" +
+                    (.power655 | map("• " + .) | join("\n")) +
+                    "\n\n*Mega 6/45*\n" +
+                    (.mega645 | map("• " + .) | join("\n"))
                 }
               }
+
             ]
           }
           ')
