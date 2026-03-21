@@ -129,11 +129,17 @@ async function fetchDrawByDate(slug) {
     return results;
 }
 
+function slugFromDate(d) {
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${dd}-${mm}-${d.getFullYear()}`;
+}
+
 // =======================
 // EXPORT
 async function scrapeToday() {
     const today = new Date();
-    const slug = `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`;
+    const slug = slugFromDate(today);
     return await fetchDrawByDate(slug);
 }
 
