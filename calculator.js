@@ -126,7 +126,10 @@ async function runGenerator() {
     // };
 
     // await fs.writeJson('./results/ai_prediction.json', output, { spaces: 2 });
-    await fs.writeJson('./ai_output.json', output);
+    if (!output || typeof output !== 'object') {
+        throw new Error("Invalid AI output");
+    }
+    await fs.writeJson('./ai_output.json', output, { spaces: 2 });
 
     // console.log("DONE AI PREDICTION\n");
     // console.log(JSON.stringify(output, null, 2));

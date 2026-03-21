@@ -32,9 +32,12 @@ jobs:
 
             node calculator.js > ai_output.txt 2>&1
 
+            echo "----- LOG -----"
+            cat ai_output.txt
+
             if grep -q "DONE AI PREDICTION" ai_output.txt; then
               if [ -f ai_output.json ]; then
-                if jq empty ai_output.json >/dev/null 2>&1; then
+                if jq -e 'type=="object"' ai_output.json >/dev/null 2>&1; then
                   echo "✅ AI success"
                   break
                 fi
@@ -51,7 +54,15 @@ jobs:
           done
 
       # =======================
-      # 📦 BUILD PAYLOAD
+      # 🧪 DEBUG JSON
+      # =======================
+      - name: Debug AI output
+        run: |
+          echo "===== AI OUTPUT ====="
+          cat ai_output.json || echo "❌ Missing file"
+
+      # =======================
+      # 📦 BUILD SLACK PAYLOAD
       # =======================
       - name: Build Slack payload
         id: slack
@@ -60,16 +71,19 @@ jobs:
 
           def highlight:
             if . == "000000" then ""
-            elif test("00$") then "🔥\(. )🔥"
+            elif test("00$") then "🔥\(.)🔥"
             elif test("(\\d)\\1\\1") then "💸\(. )💸"
             else . end;
 
           def fmtProvince:
-            to_entries
-            | map(
-                "*\(.key)*\n\(.value | map(highlight) | join("  •  "))"
-              )
-            | join("\n\n");
+            if . == null then ""
+            else
+              to_entries
+              | map(
+                  "*\(.key)*\n\(.value | map(highlight) | join("  •  "))"
+                )
+              | join("\n\n")
+            end;
 
           {
             text: "AI Prediction",
