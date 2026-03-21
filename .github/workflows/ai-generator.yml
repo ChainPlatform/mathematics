@@ -32,18 +32,12 @@ jobs:
 
             node calculator.js > ai_output.txt 2>&1
 
-            # ✅ check DONE log
             if grep -q "DONE AI PREDICTION" ai_output.txt; then
-              
-              # ✅ check JSON tồn tại
               if [ -f ai_output.json ]; then
-
-                # ✅ check JSON hợp lệ
                 if jq empty ai_output.json >/dev/null 2>&1; then
                   echo "✅ AI success"
                   break
                 fi
-
               fi
             fi
 
@@ -57,33 +51,23 @@ jobs:
           done
 
       # =======================
-      # 📦 FORMAT SLACK MESSAGE
+      # 📦 BUILD PAYLOAD
       # =======================
       - name: Build Slack payload
         id: slack
         run: |
-          payload=$(cat ai_output.json | jq -r '
-          
-          # =========================
-          # 🎯 EMOJI RANDOM
-          def randEmoji:
-            ["🎯","🔥","💸","🧠","📈"] | .[now|floor % length];
+          payload=$(jq -r '
 
-          # =========================
-          # 🔥 HIGHLIGHT
           def highlight:
             if . == "000000" then ""
-            elif test("00$") then "🔥" + . + "🔥"
-            elif test("(\\d)\\1\\1") then "💸" + . + "💸"
+            elif test("00$") then "🔥\(. )🔥"
+            elif test("(\\d)\\1\\1") then "💸\(. )💸"
             else . end;
 
-          # =========================
-          # 🌴 FORMAT PROVINCE
           def fmtProvince:
             to_entries
             | map(
-                "*\(.key)*\n" +
-                (.value | map(highlight) | join("  •  "))
+                "*\(.key)*\n\(.value | map(highlight) | join("  •  "))"
               )
             | join("\n\n");
 
@@ -91,8 +75,6 @@ jobs:
             text: "AI Prediction",
             blocks: [
 
-              # =========================
-              # HEADER
               {
                 type: "header",
                 text: {
@@ -101,62 +83,42 @@ jobs:
                 }
               },
 
-              # =========================
-              # MIỀN BẮC
               {
                 type: "section",
                 text: {
                   type: "mrkdwn",
-                  text:
-                    "*🇻🇳 Miền Bắc*\n" +
-                    ((.xsmb // [])
-                      | map(select(. != "000000") | highlight)
-                      | join("  •  "))
+                  text: "*🇻🇳 Miền Bắc*\n\((.xsmb // []) | map(select(. != "000000") | highlight) | join("  •  "))"
                 }
               },
 
-              # =========================
-              # MIỀN NAM
               {
                 type: "section",
                 text: {
                   type: "mrkdwn",
-                  text:
-                    "*🌴 Miền Nam*\n\n" +
-                    (.xsmn | fmtProvince)
+                  text: "*🌴 Miền Nam*\n\n\(.xsmn | fmtProvince)"
                 }
               },
 
-              # =========================
-              # MIỀN TRUNG
               {
                 type: "section",
                 text: {
                   type: "mrkdwn",
-                  text:
-                    "*🏔️ Miền Trung*\n\n" +
-                    (.xsmt | fmtProvince)
+                  text: "*🏔️ Miền Trung*\n\n\(.xsmt | fmtProvince)"
                 }
               },
 
-              # =========================
-              # VIETLOTT
               {
                 type: "section",
                 text: {
                   type: "mrkdwn",
-                  text:
-                    "*🎰 Vietlott*\n\n" +
-                    "*Power 6/55*\n" +
-                    (.power655 | map("• " + .) | join("\n")) +
-                    "\n\n*Mega 6/45*\n" +
-                    (.mega645 | map("• " + .) | join("\n"))
+                  text: "*🎰 Vietlott*\n\nPower 6/55\n\(.power655 | map("• " + .) | join("\n"))\n\nMega 6/45\n\(.mega645 | map("• " + .) | join("\n"))"
                 }
               }
 
             ]
           }
-          ')
+
+          ' ai_output.json)
 
           echo "payload=$payload" >> $GITHUB_OUTPUT
 
