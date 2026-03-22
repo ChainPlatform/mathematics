@@ -2,7 +2,7 @@ name: Daily Power6x55 Scrape
 
 on:
   schedule:
-    - cron: '25 11 * * 2,4,6'
+    - cron: '35 11 * * 2,4,6'
   workflow_dispatch:
 
 permissions:
