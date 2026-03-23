@@ -2,7 +2,7 @@ name: Daily AI Prediction
 
 on:
   schedule:
-    - cron: '45 11 * * *'
+    - cron: '58 11 * * *'
   workflow_dispatch:
 
 jobs:
