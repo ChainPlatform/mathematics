@@ -3,22 +3,12 @@ const fs = require('fs-extra');
 // ===== IMPORT AI MODULES =====
 const { ensemble } = require('./ai/ensemble');
 const { vietlottEnsemble } = require('./ai/vietlottEnsemble');
-
+const { load, saveCalculator, updateCalculator } = require('./utils');
 // =======================
 // FORMAT DATE
 function today() {
     const d = new Date();
     return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
-}
-
-// =======================
-// LOAD DATA
-async function load(file) {
-    try {
-        return await fs.readJson(file);
-    } catch {
-        return [];
-    }
 }
 
 // =======================
@@ -88,8 +78,6 @@ async function runGenerator() {
     const p655Data = await load('./results/power6x55.json');
     const m645Data = await load('./results/power6x45.json');
 
-    await updateCalculator(xsmbData);
-
     const todayStr = today()
 
     const output = {
@@ -105,11 +93,9 @@ async function runGenerator() {
     }
 
     if (hasTodayData(xsmbData)) {
+        await updateCalculator(xsmbData);
         output.xsmb = await predictXSMB();
-
         await saveCalculator(todayStr, output.xsmb);
-        const stats = await statsCalculator();
-        console.log("📊 STATS:", stats);
     }
 
     if (hasTodayData(p655Data)) {
@@ -127,6 +113,8 @@ async function runGenerator() {
     //     xsmn: await predictMultiProvince('./results/xsmn.json'),
     //     xsmt: await predictMultiProvince('./results/xsmt.json'),
     //     xsmb: await predictXSMB(),
+    //     const stats = await statsCalculator();
+    //     console.log("📊 STATS:", stats);
 
     //     // ===== VIETLOTT =====
     //     power655: await predictVietlott('./results/power6x55.json', '6x55'),

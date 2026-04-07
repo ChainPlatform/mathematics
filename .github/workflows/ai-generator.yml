@@ -67,7 +67,7 @@ jobs:
       - name: Build payload
         id: slack
         run: |
-          payload=$(jq -c '
+          payload=$(jq -c --slurpfile calc ./results/calculators.json '
 
           def highlight:
             if . == "000000" then ""
@@ -90,6 +90,66 @@ jobs:
                 })
             end;
 
+          def stats:
+            {
+              win: ($calc[0] | map(select(.status=="win")) | length),
+              lose: ($calc[0] | map(select(.status=="lose")) | length),
+              total: ($calc[0] | map(select(.status!=null)) | length)
+            };
+
+          def rate:
+            (stats) as $s |
+            if $s.total == 0 then "0%"
+            else ((($s.win * 100) / $s.total | floor | tostring) + "%")
+            end;
+
+          def latest:
+            $calc[0][0];
+
+          def today:
+            ($calc[0] | map(select(.status!=null)) | .[0]);
+
+          def last7:
+            $calc[0]
+            | map(select(.status!=null))
+            | .[:7];
+
+          def last7Stats:
+            (last7) as $l |
+            {
+              win: ($l | map(select(.status=="win")) | length),
+              lose: ($l | map(select(.status=="lose")) | length),
+              total: ($l | length)
+            };
+
+          def last7Rate:
+            (last7Stats) as $s |
+            if $s.total == 0 then "0%"
+            else ((($s.win * 100) / $s.total | floor | tostring) + "%")
+            end;
+
+          def currentMonth:
+            (now | strftime("%m-%Y"));
+
+          def monthData:
+            $calc[0]
+            | map(select(.status!=null))
+            | map(select(.date[3:10] == currentMonth));
+
+          def monthStats:
+            (monthData) as $m |
+            {
+              win: ($m | map(select(.status=="win")) | length),
+              lose: ($m | map(select(.status=="lose")) | length),
+              total: ($m | length)
+            };
+
+          def monthRate:
+            (monthStats) as $s |
+            if $s.total == 0 then "0%"
+            else ((($s.win * 100) / $s.total | floor | tostring) + "%")
+            end;
+
           {
             text: "AI Prediction",
             blocks:
@@ -110,6 +170,58 @@ jobs:
                       type: "mrkdwn",
                       text:
                         "*🇻🇳 Miền Bắc*\n\((.xsmb // []) | map(select(. != "000000") | highlight) | join("  •  "))"
+                    }
+                  },
+
+                  { type: "divider" },
+
+                  {
+                    type: "section",
+                    text: {
+                      type: "mrkdwn",
+                      text:
+                        "*📅 Bộ số ngày mai*\n\((latest.numbers // []) | join("  •  "))"
+                    }
+                  },
+
+                  {
+                    type: "section",
+                    text: {
+                      type: "mrkdwn",
+                      text:
+                        "*🎯 Kết quả hôm nay*\n\(
+                          if (today) then
+                            (today.result + " → " + (if today.status=="win" then "🔥 WIN" else "LOSE" end))
+                          else "Chưa có"
+                          end
+                        )"
+                    }
+                  },
+
+                  {
+                    type: "section",
+                    text: {
+                      type: "mrkdwn",
+                      text:
+                        "*📊 Tỷ lệ*\nWin: \(stats.win) | Lose: \(stats.lose) | Rate: \(rate)"
+                    }
+                  },
+
+                  {
+                    type: "section",
+                    text: {
+                      type: "mrkdwn",
+                      text:
+                        "*📊 7 ngày gần nhất*\nWin: \(last7Stats.win) | Lose: \(last7Stats.lose) | Rate: \(last7Rate)"
+                    }
+                  },
+
+                  {
+                    type: "section",
+                    text: {
+                      type: "mrkdwn",
+                      text:
+                        "*📅 Tháng này*\nWin: \(monthStats.win) | Lose: \(monthStats.lose) | Rate: \(monthRate)"
                     }
                   },
 
@@ -161,3 +273,11 @@ jobs:
           curl -X POST -H 'Content-type: application/json' \
           --data '${{ steps.slack.outputs.payload }}' \
           ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Commit & push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results/calculators.json
+          git diff --quiet --cached || git commit -m "📊 Calculators XSMB @ $(date -u +'%Y-%m-%d')" 
+          git push

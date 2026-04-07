@@ -1,5 +1,25 @@
+const fs = require('fs-extra');
+
+async function load(file) {
+    try {
+        return await fs.readJson(file);
+    } catch {
+        return [];
+    }
+}
+
 function getLast2Digits(numbers) {
-    return numbers.map(n => String(n).slice(-2));
+    const result = [];
+
+    numbers.forEach(n => {
+        const last2 = String(n).slice(-2).padStart(2, "0");
+
+        if (!result.includes(last2)) {
+            result.push(last2);
+        }
+    });
+
+    return result;
 }
 
 function getNextDate(dateStr) {
@@ -18,12 +38,11 @@ async function saveCalculator(todayStr, xsmbNumbers) {
         data = await fs.readJson(file);
     } catch { }
 
-    // ❗ tránh duplicate ngày
     if (data.some(x => x.date === todayStr)) return;
 
     const last2 = getLast2Digits(xsmbNumbers);
 
-    data.push({
+    data.unshift({
         date: todayStr,
         numbers: last2,
         result: null,
@@ -46,14 +65,10 @@ async function updateCalculator(xsmbData) {
     for (let item of data) {
         if (item.status) continue;
 
-        const nextDay = getNextDate(item.date);
-
-        const result = xsmbData.find(x => x.date === nextDay);
-
+        const result = xsmbData.find(x => x.date === item.date);
         if (!result) continue;
 
-        // ❗ giả sử key là "special"
-        const special = String(result.special).slice(-2);
+        const special = String(result.prizes?.giaidb?.[0] || "").slice(-2);
 
         item.result = special;
         item.status = item.numbers.includes(special) ? "win" : "lose";
@@ -81,4 +96,4 @@ async function statsCalculator() {
     };
 }
 
-module.exports = { getLast2Digits, getNextDate, saveCalculator, updateCalculator, statsCalculator };
+module.exports = { load, getLast2Digits, getNextDate, saveCalculator, updateCalculator, statsCalculator };

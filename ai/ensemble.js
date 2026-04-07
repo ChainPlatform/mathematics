@@ -11,7 +11,7 @@ function ensemble(provinceId, data, digits = 6) {
 
   const model = buildModel(data, provinceId);
   if (!model || !model.total || model.total < 30) {
-    return Array.from({ length: 10 }, () =>
+    return Array.from({ length: 50 }, () =>
       String(Math.floor(Math.random() * Math.pow(10, digits)))
         .padStart(digits, '0')
     );
@@ -33,7 +33,7 @@ function ensemble(provinceId, data, digits = 6) {
 
   const result = Object.entries(score)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
+    .slice(0, 50)
     .map(x => x[0]);
 
   cache.set(key, result);
