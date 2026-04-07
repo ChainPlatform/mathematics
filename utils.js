@@ -38,12 +38,13 @@ async function saveCalculator(todayStr, xsmbNumbers) {
         data = await fs.readJson(file);
     } catch { }
 
-    if (data.some(x => x.date === todayStr)) return;
+    const nextDay = getNextDate(todayStr);
+    if (data.some(x => x.date === nextDay)) return;
 
     const last2 = getLast2Digits(xsmbNumbers);
 
     data.unshift({
-        date: todayStr,
+        date: nextDay,
         numbers: last2,
         result: null,
         status: null
