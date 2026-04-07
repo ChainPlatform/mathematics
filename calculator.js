@@ -63,7 +63,9 @@ async function predictXSMB() {
 
     if (!data.length) return null;
 
-    return ensemble("mien_bac", data, 5).slice(0, 3);
+    const infos = ensemble("mien_bac", data, 5).slice(0, 20);
+
+    return infos;
 }
 
 // =======================
@@ -86,6 +88,8 @@ async function runGenerator() {
     const p655Data = await load('./results/power6x55.json');
     const m645Data = await load('./results/power6x45.json');
 
+    await updateCalculator(xsmbData);
+
     const todayStr = today()
 
     const output = {
@@ -102,6 +106,10 @@ async function runGenerator() {
 
     if (hasTodayData(xsmbData)) {
         output.xsmb = await predictXSMB();
+
+        await saveCalculator(todayStr, output.xsmb);
+        const stats = await statsCalculator();
+        console.log("📊 STATS:", stats);
     }
 
     if (hasTodayData(p655Data)) {
@@ -126,6 +134,7 @@ async function runGenerator() {
     // };
 
     // await fs.writeJson('./results/ai_prediction.json', output, { spaces: 2 });
+
     if (!output || typeof output !== 'object') {
         throw new Error("Invalid AI output");
     }
