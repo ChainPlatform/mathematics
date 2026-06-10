@@ -1,5 +1,35 @@
 [
   {
+    "date": "10-06-2026",
+    "ky_ve": null,
+    "numbers": [
+      "03",
+      "09",
+      "17",
+      "22",
+      "27",
+      "32"
+    ],
+    "prizes": {
+      "jackpot": {
+        "count": 1,
+        "amount": 23970104000
+      },
+      "giai_nhat": {
+        "count": 30,
+        "amount": 10000000
+      },
+      "giai_nhi": {
+        "count": 1283,
+        "amount": 300000
+      },
+      "giai_ba": {
+        "count": 21461,
+        "amount": 30000
+      }
+    }
+  },
+  {
     "date": "07-06-2026",
     "ky_ve": null,
     "numbers": [
